@@ -1,0 +1,217 @@
+{% extends 'base_admin.html' %}
+
+{% block header_titles %}
+<h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Manajemen <span class="text-red-600">Aduan</span></h1>
+<p class="text-gray-400 text-sm mt-2 italic font-medium">Pantau dan kelola seluruh laporan warga secara terpusat.</p>
+{% endblock %}
+
+{% block content %}
+<!-- Control Bar -->
+<div class="flex justify-between items-center mb-8">
+    <div class="flex items-center gap-4 flex-1 max-w-2xl">
+        <div class="relative flex-1">
+            <svg class="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="searchInput" placeholder="Cari dalam laporan..." class="w-full bg-white border border-gray-100 rounded-2xl py-3 pl-14 pr-6 text-sm font-medium focus:ring-2 ring-red-500 outline-none shadow-sm placeholder:text-gray-300 transition-all">
+        </div>
+        
+        <!-- Category Filter -->
+        <div class="relative inline-block text-left" id="categoryDropdown">
+            <button onclick="toggleDropdown()" class="bg-white px-6 py-3 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all">
+                <span id="selectedCategory">Semua Kategori</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-56 origin-top-right rounded-2xl bg-white shadow-2xl ring-1 ring-black ring-opacity-5 z-20 overflow-hidden">
+                <div class="py-1">
+                    <a href="#" onclick="selectCategory('Semua Kategori', 'Semua Kategori')" class="block px-6 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50">Semua Kategori</a>
+                    <a href="#" onclick="selectCategory('🚗 Infrastruktur', 'Infrastruktur')" class="block px-6 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50">🚗 Infrastruktur</a>
+                    <a href="#" onclick="selectCategory('🛡️ Keamanan', 'Keamanan')" class="block px-6 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50">🛡️ Keamanan</a>
+                    <a href="#" onclick="selectCategory('🧹 Kebersihan', 'Kebersihan')" class="block px-6 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50">🧹 Kebersihan</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="flex flex-col gap-4" id="report-container">
+    {% for report in reports %}
+    <div class="soft-card p-6 flex justify-between items-center report-card transition-all hover:scale-[1.01]" data-category="{{ report.category }}">
+        <div class="flex items-center gap-6">
+            <!-- Image Placeholder -->
+            <div class="relative w-20 h-20 bg-gray-50 rounded-3xl flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-4 border-white 
+                    {% if report.status == 'SELESAI' %}bg-emerald-500{% elif report.status == 'DIPROSES' %}bg-blue-500{% else %}bg-amber-500{% endif %}">
+                </div>
+            </div>
+            
+            <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-3">
+                    <span class="text-[10px] font-extrabold text-gray-300 tracking-widest uppercase">{{ report.category }}</span>
+                    <span class="text-gray-100">•</span>
+                    <span class="bg-gray-100 text-gray-400 px-2 py-0.5 rounded text-[9px] font-bold">PENGIRIM: ANONIM</span>
+                </div>
+                <h3 class="text-lg font-extrabold text-gray-900 leading-tight">{{ report.title }}</h3>
+                <p class="text-sm text-gray-400 font-medium max-w-xl truncate">{{ report.description }}</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <!-- Status Badge -->
+            <span class="px-4 py-1.5 rounded-xl text-[10px] font-extrabold flex items-center gap-2 border
+                {% if report.status == 'SELESAI' %}bg-emerald-50 text-emerald-500 border-emerald-100{% elif report.status == 'DIPROSES' %}bg-blue-50 text-blue-500 border-blue-100{% else %}bg-amber-50 text-amber-500 border-amber-100{% endif %}">
+                {{ report.status }}
+            </span>
+            
+            <div class="flex gap-2">
+                <button onclick="openModal('{{ report.category }}', '{{ report.title }}', '{{ report.description }}', '{{ report.status }}', '{{ report.image }}')" class="p-2.5 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition-colors shadow-lg shadow-gray-100" title="Detail">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+                <button onclick="handleStatusUpdate('{{ report.id }}', 'DIPROSES')" class="p-2.5 rounded-xl bg-gray-50 text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-colors" title="Proses">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                </button>
+                <button onclick="handleStatusUpdate('{{ report.id }}', 'SELESAI')" class="p-2.5 rounded-xl bg-gray-50 text-gray-400 hover:bg-emerald-50 hover:text-emerald-500 transition-colors" title="Selesai">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </button>
+                <button onclick="handleDelete('{{ report.id }}')" class="p-2.5 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors" title="Hapus">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+<!-- Modal Detail -->
+<div id="detailModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+    <div class="bg-white w-full max-w-lg rounded-[40px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+        <div class="p-10">
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <span id="modalCategory" class="text-[10px] font-extrabold text-red-600 tracking-widest uppercase">KATEGORI</span>
+                    <h2 id="modalTitle" class="text-3xl font-extrabold text-gray-900 mt-2 leading-tight">Judul Aduan</h2>
+                </div>
+                <button onclick="closeModal()" class="p-2 hover:bg-gray-50 rounded-full transition-colors">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <div id="modalImageContainer" class="hidden w-full h-48 bg-gray-100 rounded-3xl overflow-hidden mb-6">
+                    <img id="modalImage" src="" alt="Lampiran Foto" class="w-full h-full object-cover">
+                </div>
+                <div>
+                    <label class="text-[11px] font-extrabold text-gray-300 tracking-widest uppercase block mb-2">Penjelasan Detail</label>
+                    <p id="modalDescription" class="text-gray-600 leading-relaxed font-medium">Isi penjelasan aduan...</p>
+                </div>
+                
+                <div class="flex items-center gap-3 py-4 border-t border-gray-50">
+                    <span class="bg-gray-100 text-gray-400 px-3 py-1 rounded-lg text-[10px] font-bold">STATUS: <span id="modalStatus">MENUNGGU</span></span>
+                    <span class="bg-gray-100 text-gray-400 px-3 py-1 rounded-lg text-[10px] font-bold">PENGIRIM: ANONIM</span>
+                </div>
+            </div>
+            
+            <button onclick="closeModal()" class="w-full mt-8 bg-gray-900 text-white py-4 rounded-2xl font-extrabold tracking-widest hover:bg-gray-800 transition-all shadow-lg shadow-gray-200">TUTUP</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openModal(category, title, description, status, image) {
+    document.getElementById('modalCategory').innerText = category;
+    document.getElementById('modalTitle').innerText = title;
+    document.getElementById('modalDescription').innerText = description;
+    document.getElementById('modalStatus').innerText = status;
+    
+    const imgContainer = document.getElementById('modalImageContainer');
+    const img = document.getElementById('modalImage');
+    if (image && image !== 'None' && image !== '') {
+        img.src = '/static/uploads/' + image;
+        imgContainer.classList.remove('hidden');
+    } else {
+        imgContainer.classList.add('hidden');
+    }
+    
+    document.getElementById('detailModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('detailModal').classList.add('hidden');
+}
+
+function toggleDropdown() {
+    document.getElementById('dropdownMenu').classList.toggle('hidden');
+}
+
+function selectCategory(displayHtml, value) {
+    document.getElementById('selectedCategory').innerHTML = displayHtml;
+    document.getElementById('dropdownMenu').classList.add('hidden');
+    filterReports();
+}
+
+function filterReports() {
+    const searchVal = document.getElementById('searchInput').value.toLowerCase();
+    const selectedText = document.getElementById('selectedCategory').innerText.toLowerCase();
+    
+    // Extract actual category name from something like "🚗 Infrastruktur" or "Semua Kategori"
+    let categoryVal = "semua kategori";
+    if (selectedText.includes("infrastruktur")) categoryVal = "infrastruktur";
+    if (selectedText.includes("keamanan")) categoryVal = "keamanan";
+    if (selectedText.includes("kebersihan")) categoryVal = "kebersihan";
+
+    const reports = document.getElementsByClassName('report-card');
+    
+    for (let i = 0; i < reports.length; i++) {
+        const title = reports[i].querySelector('h3').innerText.toLowerCase();
+        const desc = reports[i].querySelector('p').innerText.toLowerCase();
+        const category = reports[i].getAttribute('data-category').toLowerCase();
+        
+        const matchSearch = title.includes(searchVal) || desc.includes(searchVal);
+        const matchCategory = categoryVal === 'semua kategori' || category === categoryVal;
+        
+        if (matchSearch && matchCategory) {
+            reports[i].classList.remove('hidden');
+            reports[i].classList.add('flex');
+        } else {
+            reports[i].classList.add('hidden');
+            reports[i].classList.remove('flex');
+        }
+    }
+}
+
+document.getElementById('searchInput').addEventListener('input', filterReports);
+
+function handleStatusUpdate(reportId, newStatus) {
+    fetch('/api/report/update_status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: reportId, status: newStatus })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function handleDelete(reportId) {
+    if (confirm("Apakah Anda yakin ingin menghapus laporan ini?")) {
+        fetch('/api/report/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: reportId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+window.onclick = function(e) {
+    if (!e.target.closest('#categoryDropdown')) {
+        document.getElementById('dropdownMenu').classList.add('hidden');
+    }
+}
+</script>
+{% endblock %}

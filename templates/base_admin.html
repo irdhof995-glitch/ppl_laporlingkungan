@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lapor. Admin - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .soft-card { background: #ffffff; border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.02); }
+        .btn-soft { transition: all 0.2s; }
+        .btn-soft:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Info Banner -->
+    <div class="bg-red-50 py-2 px-6 border-b border-red-100 flex justify-between items-center sticky top-0 z-50">
+        <div class="flex items-center gap-3 overflow-hidden flex-1">
+            <div class="bg-red-600 p-1.5 rounded-lg text-white">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            </div>
+            <span class="bg-red-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">INFO</span>
+            <marquee class="text-red-900 text-xs font-semibold italic flex-1" id="news-ticker">{{ info.running_text }}</marquee>
+        </div>
+        
+        <div class="flex items-center gap-4 ml-4">
+            {% if session['user'].role in ['ADMIN', 'PENGURUS'] %}
+            <div class="cursor-pointer hover:scale-110 transition-transform p-1.5 bg-white rounded-lg border border-red-100 shadow-sm" onclick="updateNews()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d90000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Top Navbar -->
+    <header class="bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 py-4 flex justify-between items-center sticky top-[41px] z-40">
+        <div class="flex items-center gap-3">
+            <div class="bg-red-600 w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-red-200">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-sm font-extrabold text-gray-900 leading-none">Lapor. <span class="text-gray-400 font-medium">Admin</span></span>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{{ session['user'].role }}</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-6">
+            <a href="{{ url_for('logout') }}" class="text-gray-400 hover:text-red-600 transition-colors">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            </a>
+            <div class="w-10 h-10 rounded-full overflow-hidden ring-4 ring-red-50 border-2 border-white">
+                <img src="{{ session['user'].avatar or 'https://api.dicebear.com/7.x/avataaars/svg?seed=Admin' }}" alt="Avatar" class="w-full h-full object-cover">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto px-8 py-10">
+        <div class="flex justify-between items-end mb-10">
+            <div>
+                {% block header_titles %}
+                <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Sistem <span class="text-red-600">Utama</span></h1>
+                <p class="text-gray-400 text-sm mt-2 italic font-medium">Pengelolaan tingkat tinggi akses dan infrastruktur platform.</p>
+                {% endblock %}
+            </div>
+            
+            {% if session.get('user') and session['user']['role'] == 'ADMIN' %}
+            <div class="flex bg-white p-1.5 rounded-2xl shadow-sm border border-gray-50">
+                <a href="{{ url_for('admin_pengguna') }}" class="px-6 py-2 rounded-xl text-[11px] font-extrabold tracking-widest transition-all {{ 'bg-red-600 text-white shadow-lg shadow-red-100' if active_tab == 'pengguna' else 'text-gray-400 hover:text-gray-900' }}">PENGGUNA</a>
+                <a href="{{ url_for('admin_aduan') }}" class="px-6 py-2 rounded-xl text-[11px] font-extrabold tracking-widest transition-all {{ 'bg-red-600 text-white shadow-lg shadow-red-100' if active_tab == 'aduan' else 'text-gray-400 hover:text-gray-900' }}">ADUAN</a>
+            </div>
+            {% endif %}
+        </div>
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        function updateNews() {
+            let currentNews = document.getElementById('news-ticker').innerText;
+            let newNews = prompt("Masukkan berita / info terkini untuk disiarkan:", currentNews);
+            if (newNews !== null && newNews.trim() !== "") {
+                fetch('/api/system/update_news', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: newNews })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('news-ticker').innerText = newNews;
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
